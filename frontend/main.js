@@ -1,7 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Check if we're running on a server or as static files
     const isStaticFile = window.location.protocol === 'file:';
-    const apiBaseUrl = isStaticFile ? '' : '';
+    
+    // Define API base URL (change this to your actual backend URL when deploying)
+    const apiBaseUrl = isStaticFile ? '' : 'http://localhost:5000';
     
     // Set up CSRF token for all AJAX requests
     const setupCSRF = () => {
@@ -11,8 +13,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Set up CSRF for all fetch requests
                 const originalFetch = window.fetch;
                 window.fetch = function(url, options = {}) {
+                    const isFullUrl = url.startsWith('http');
+                    const fetchUrl = isFullUrl ? url : `${apiBaseUrl}${url}`;
+                    
                     // Only add CSRF token to same-origin POST/PUT/DELETE requests
-                    if (url.startsWith('/') && options.method && options.method !== 'GET') {
+                    if (!isFullUrl && options.method && options.method !== 'GET') {
                         if (!options.headers) {
                             options.headers = {};
                         }
@@ -22,7 +27,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             options.headers['X-CSRFToken'] = csrfToken;
                         }
                     }
-                    return originalFetch.call(this, url, options);
+                    
+                    // Add credentials for cross-origin requests
+                    if (!options.credentials) {
+                        options.credentials = 'include';
+                    }
+                    
+                    return originalFetch.call(this, fetchUrl, options);
                 };
             }
         }

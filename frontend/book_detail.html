@@ -145,11 +145,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Check if running as static file
             const isStaticFile = window.location.protocol === 'file:';
+            const apiBaseUrl = isStaticFile ? '' : 'http://localhost:5000';
             
             // In real implementation, fetch book details from API using ID in URL
             if (!isStaticFile) {
                 const bookId = window.location.pathname.split('/').pop();
-                fetch(`/api/books/${bookId}`)
+                fetch(`${apiBaseUrl}/api/books/${bookId}`, {
+                    credentials: 'include' // Include cookies for authentication
+                })
                     .then(response => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -179,11 +182,12 @@
                     }
                     
                     const bookId = window.location.pathname.split('/').pop();
-                    fetch(`/books/${bookId}/borrow`, {
+                    fetch(`${apiBaseUrl}/books/${bookId}/borrow`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
-                        }
+                        },
+                        credentials: 'include'
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -218,11 +222,12 @@
                     }
                     
                     const bookId = window.location.pathname.split('/').pop();
-                    fetch(`/books/${bookId}/delete`, {
+                    fetch(`${apiBaseUrl}/books/${bookId}/delete`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
-                        }
+                        },
+                        credentials: 'include'
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -248,7 +253,7 @@
                         window.location.href = './edit_book.html';
                     } else {
                         const bookId = window.location.pathname.split('/').pop();
-                        window.location.href = `/books/${bookId}/edit`;
+                        window.location.href = `${apiBaseUrl}/books/${bookId}/edit`;
                     }
                 });
             }

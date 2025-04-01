@@ -172,10 +172,13 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Check if we're running standalone or with backend
             const isStaticFile = window.location.protocol === 'file:';
+            const apiBaseUrl = isStaticFile ? '' : 'http://localhost:5000'; // Change to your production backend URL
             
             // Fetch books either from API or show sample data
             if (!isStaticFile) {
-                fetch('/api/books')
+                fetch(`${apiBaseUrl}/api/books`, {
+                    credentials: 'include' // Include cookies in the request
+                })
                     .then(response => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -191,7 +194,9 @@
                     });
                 
                 // Also fetch user info to update UI
-                fetch('/api/user')
+                fetch(`${apiBaseUrl}/api/user`, {
+                    credentials: 'include'
+                })
                     .then(response => response.json())
                     .then(userData => {
                         updateAuthUI(userData);

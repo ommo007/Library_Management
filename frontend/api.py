@@ -1,8 +1,17 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, current_app
 from flask_login import current_user, login_required
+from flask_cors import cross_origin
 from db import Book, Section
 
 api_bp = Blueprint('api', __name__)
+
+# Optional: Define CORS options specifically for this blueprint if different from app-wide settings
+# @api_bp.after_request
+# def add_cors_headers(response):
+#     response.headers.add('Access-Control-Allow-Origin', '*')
+#     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+#     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+#     return response
 
 @api_bp.route('/books')
 def get_books():

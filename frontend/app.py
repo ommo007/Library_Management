@@ -6,6 +6,7 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -23,6 +24,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "library_management_secret_key")
 app.config["JWT_SECRET_KEY"] = os.environ.get("SESSION_SECRET", "library_management_jwt_key")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400  # 1 day
+
+# Enable CORS for all routes
+CORS(app)
 
 # Initialize extensions with app
 login_manager.init_app(app)

@@ -138,6 +138,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const isStaticFile = window.location.protocol === 'file:';
+            const apiBaseUrl = isStaticFile ? '' : 'http://localhost:5000';
             let bookId = '1'; // Default value for static mode
             
             // Get book ID from URL in non-static mode
@@ -146,10 +147,12 @@
                 bookId = pathParts[pathParts.length - 2]; // URL pattern is /books/:id/edit
                 
                 // Update form action
-                document.getElementById('edit-book-form').action = `/books/${bookId}/edit`;
+                document.getElementById('edit-book-form').action = `${apiBaseUrl}/books/${bookId}/edit`;
                 
                 // Load book data
-                fetch(`/api/books/${bookId}`)
+                fetch(`${apiBaseUrl}/api/books/${bookId}`, {
+                    credentials: 'include'
+                })
                     .then(response => {
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -170,12 +173,12 @@
                         const bookTitleLink = document.getElementById('book-title-link');
                         if (bookTitleLink) {
                             bookTitleLink.textContent = book.title;
-                            bookTitleLink.href = `/books/${bookId}`;
+                            bookTitleLink.href = `${apiBaseUrl}/books/${bookId}`;
                         }
                         
                         const backBtn = document.getElementById('back-btn');
                         if (backBtn) {
-                            backBtn.href = `/books/${bookId}`;
+                            backBtn.href = `${apiBaseUrl}/books/${bookId}`;
                         }
                     })
                     .catch(error => {
@@ -184,7 +187,9 @@
                     });
                 
                 // Load sections
-                fetch('/api/sections')
+                fetch(`${apiBaseUrl}/api/sections`, {
+                    credentials: 'include'
+                })
                     .then(response => response.json())
                     .then(sections => {
                         const sectionSelect = document.getElementById('section_id');
