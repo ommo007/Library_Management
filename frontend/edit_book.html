@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="">
+    <title>Edit Book - Library Book Management System</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="./index.html">
+                <i class="fas fa-book-open me-2"></i>Library Management
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="./index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="./index.html">Books</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav" id="auth-nav">
+                    <!-- Auth navbar content will be dynamically populated -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="container mt-4 mb-5">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="./index.html">Home</a></li>
+                <li class="breadcrumb-item"><a href="./index.html">Books</a></li>
+                <li class="breadcrumb-item"><a href="./book_detail.html" id="book-title-link">The Great Gatsby</a></li>
+                <li class="breadcrumb-item active">Edit</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow">
+                    <div class="card-header bg-warning text-dark">
+                        <h4 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Book</h4>
+                    </div>
+                    <div class="card-body">
+                        <form id="edit-book-form" method="POST">
+                            <input type="hidden" name="csrf_token" id="csrf_token" value="">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="title" name="title" value="The Great Gatsby" required>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="author" class="form-label">Author <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="author" name="author" value="F. Scott Fitzgerald" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="isbn" class="form-label">ISBN</label>
+                                    <input type="text" class="form-control" id="isbn" name="isbn" value="9780743273565">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="genre" class="form-label">Genre</label>
+                                    <input type="text" class="form-control" id="genre" name="genre" value="Fiction">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="section_id" class="form-label">Section <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="section_id" name="section_id" required>
+                                        <option value="">Select Section</option>
+                                        <option value="1" selected>Fiction</option>
+                                        <option value="2">Non-Fiction</option>
+                                        <option value="3">Science</option>
+                                        <option value="4">History</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="available" name="available" checked>
+                                <label class="form-check-label" for="available">Available for borrowing</label>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="./book_detail.html" class="btn btn-secondary" id="back-btn">
+                                    <i class="fas fa-arrow-left me-1"></i>Back to Book Details
+                                </a>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save me-1"></i>Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-auto">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Library Book Management System</h5>
+                    <p class="small">Manage your library efficiently</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="small">&copy; 2023 Library Book Management System. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="./main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isStaticFile = window.location.protocol === 'file:';
+            let bookId = '1'; // Default value for static mode
+            
+            // Get book ID from URL in non-static mode
+            if (!isStaticFile) {
+                const pathParts = window.location.pathname.split('/');
+                bookId = pathParts[pathParts.length - 2]; // URL pattern is /books/:id/edit
+                
+                // Update form action
+                document.getElementById('edit-book-form').action = `/books/${bookId}/edit`;
+                
+                // Load book data
+                fetch(`/api/books/${bookId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(book => {
+                        // Update form fields with book data
+                        document.getElementById('title').value = book.title;
+                        document.getElementById('author').value = book.author;
+                        document.getElementById('isbn').value = book.isbn || '';
+                        document.getElementById('genre').value = book.genre || '';
+                        document.getElementById('section_id').value = book.section ? book.section.id : '';
+                        document.getElementById('available').checked = book.available;
+                        
+                        // Update breadcrumb and page title
+                        document.title = `Edit ${book.title} - Library Book Management System`;
+                        const bookTitleLink = document.getElementById('book-title-link');
+                        if (bookTitleLink) {
+                            bookTitleLink.textContent = book.title;
+                            bookTitleLink.href = `/books/${bookId}`;
+                        }
+                        
+                        const backBtn = document.getElementById('back-btn');
+                        if (backBtn) {
+                            backBtn.href = `/books/${bookId}`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching book details:', error);
+                        alert('Error loading book data. Please try again.');
+                    });
+                
+                // Load sections
+                fetch('/api/sections')
+                    .then(response => response.json())
+                    .then(sections => {
+                        const sectionSelect = document.getElementById('section_id');
+                        // Clear existing options except the placeholder
+                        while (sectionSelect.options.length > 1) {
+                            sectionSelect.remove(1);
+                        }
+                        
+                        // Add options from API
+                        sections.forEach(section => {
+                            const option = document.createElement('option');
+                            option.value = section.id;
+                            option.textContent = section.name;
+                            sectionSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error loading sections:', error);
+                    });
+            }
+            
+            // Handle form submission
+            const editForm = document.getElementById('edit-book-form');
+            editForm.addEventListener('submit', function(e) {
+                if (isStaticFile) {
+                    e.preventDefault();
+                    
+                    // Basic validation
+                    const title = document.getElementById('title').value.trim();
+                    const author = document.getElementById('author').value.trim();
+                    const sectionId = document.getElementById('section_id').value;
+                    
+                    if (!title || !author || !sectionId) {
+                        alert('Please fill in all required fields.');
+                        return;
+                    }
+                    
+                    alert('Book updated successfully!');
+                    window.location.href = './book_detail.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

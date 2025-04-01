@@ -89,9 +89,11 @@ with app.app_context():
 # Import and register blueprints
 from routes import main_bp
 from auth import auth_bp
+from api import api_bp
 
 app.register_blueprint(main_bp)
 app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(api_bp, url_prefix='/api')
 
 # User loader callback for Flask-Login
 @login_manager.user_loader
