@@ -5,7 +5,6 @@ import logging
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -13,13 +12,13 @@ load_dotenv()
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Database connection parameters
+# Database connection parameters with specific values
 DB_PARAMS = {
-    'dbname': os.getenv('PGDATABASE'),
-    'user': os.getenv('PGUSER'),
-    'password': os.getenv('PGPASSWORD'),
-    'host': os.getenv('PGHOST'),
-    'port': os.getenv('PGPORT')
+    'dbname': 'library-management',
+    'user': 'postgres',
+    'password': 'password',
+    'host': 'localhost',
+    'port': '5432'
 }
 
 # Connection pool
@@ -29,7 +28,31 @@ def get_connection():
     """Get a database connection from the pool"""
     global _conn
     if _conn is None or _conn.closed:
-        _conn = psycopg2.connect(**DB_PARAMS)
+        try:
+            logger.info(f"Connecting to PostgreSQL database on {DB_PARAMS['host']}:{DB_PARAMS['port']}")
+            # Log connection parameters for debugging (mask password for security)
+            debug_params = dict(DB_PARAMS)
+            debug_params['password'] = '***' if debug_params['password'] else 'empty'
+            logger.debug(f"Connection parameters: {debug_params}")
+            
+            _conn = psycopg2.connect(**DB_PARAMS)
+            logger.info("Database connection established successfully")
+        except psycopg2.OperationalError as e:
+            logger.error(f"Could not connect to the PostgreSQL database: {e}")
+            logger.info("Please ensure PostgreSQL is running and the connection parameters are correct")
+            logger.info(f"Current connection parameters (host:port): {DB_PARAMS['host']}:{DB_PARAMS['port']}")
+            
+            # Try alternate connection method with connection string
+            try:
+                logger.info("Attempting alternate connection method...")
+                conn_string = f"dbname='{DB_PARAMS['dbname']}' user='{DB_PARAMS['user']}' password='{DB_PARAMS['password']}' host='{DB_PARAMS['host']}' port='{DB_PARAMS['port']}'"
+                _conn = psycopg2.connect(conn_string)
+                logger.info("Alternative connection method successful")
+                return _conn
+            except Exception as alt_e:
+                logger.error(f"Alternative connection method failed: {alt_e}")
+            
+            raise
     return _conn
 
 def get_cursor(conn=None, cursor_factory=psycopg2.extras.DictCursor):
@@ -236,18 +259,81 @@ class User(UserMixin):
         VALUES (%s, %s, %s, %s)
         RETURNING id, created_at, updated_at
         """
-        result = execute_query(
-            query, 
-            (self.username, self.email, self.password_hash, self.role_id),
-            commit=True
-        )
-        if result:
-            row = result[0]
-            self.id = row['id']
-            self.created_at = row['created_at']
-            self.updated_at = row['updated_at']
-            return True
-        return False
+        try:
+            logger.info(f"Creating new user with username: {self.username}, email: {self.email}")
+            
+            # Make sure we have valid role_id
+            if not self.role_id:
+                # Default to Student role if not specified
+                student_role = Role.get_by_name('Student')
+                if student_role:
+                    self.role_id = student_role.id
+                    logger.info(f"Using default Student role (id: {self.role_id})")
+                else:
+                    logger.error("Failed to find Student role for new user")
+                    return False
+            
+            conn = get_connection()
+            with get_cursor(conn) as cursor:
+                cursor.execute(query, (self.username, self.email, self.password_hash, self.role_id))
+                row = cursor.fetchone()
+                
+                if row:
+                    self.id = row['id']
+                    self.created_at = row['created_at']
+                    self.updated_at = row['updated_at']
+                    conn.commit()  # Explicit commit
+                    logger.info(f"User created successfully. ID: {self.id}")
+                    return True
+                else:
+                    conn.rollback()
+                    logger.error("User creation failed - no row returned")
+                    return False
+                    
+        except psycopg2.errors.UniqueViolation as e:
+            logger.error(f"User creation failed - duplicate entry: {e}")
+            if 'username' in str(e).lower():
+                logger.warning(f"Username '{self.username}' already exists")
+            elif 'email' in str(e).lower():
+                logger.warning(f"Email '{self.email}' already in use")
+            return False
+        except Exception as e:
+            logger.error(f"User creation failed with error: {e}")
+            return False
+
+    # Add a static method for user registration
+    @classmethod
+    def register(cls, username, email, password, role_name='Student'):
+        """Register a new user with specified credentials"""
+        try:
+            # Check if username or email already exists
+            if cls.get_by_username(username):
+                logger.warning(f"Registration failed: Username '{username}' already exists")
+                return None, "Username already exists"
+                
+            if cls.get_by_email(email):
+                logger.warning(f"Registration failed: Email '{email}' already in use")
+                return None, "Email address already in use"
+                
+            # Get role
+            role = Role.get_by_name(role_name)
+            if not role:
+                logger.error(f"Registration failed: Role '{role_name}' not found")
+                return None, f"Role '{role_name}' not found"
+                
+            # Create user
+            user = cls(username=username, email=email, role_id=role.id)
+            user.set_password(password)
+            
+            if user.create():
+                logger.info(f"User registered successfully: {username}")
+                return user, None
+            else:
+                return None, "Failed to create user record"
+                
+        except Exception as e:
+            logger.exception(f"Unexpected error during user registration: {e}")
+            return None, "An unexpected error occurred"
     
     def set_password(self, password):
         """Set password hash"""

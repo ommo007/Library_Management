@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Books - Library Book Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-between align-items-center mb-4">
+    <div class="col-md-6">
+        <h1 class="mb-0"><i class="fas fa-book me-2"></i>Book Collection</h1>
+    </div>
+    <div class="col-md-6 text-md-end mt-md-0 mt-3">
+        {% if current_user.is_librarian() %}
+        <a href="{{ url_for('main.create_book') }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i>Add Book
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form id="search-form" method="GET" action="{{ url_for('main.books') }}">
+            <div class="row g-3">
+                <div class="col-md-8 search-results-container">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" id="search-input" name="query" class="form-control" 
+                               placeholder="Search by title, author, or ISBN..." 
+                               value="{{ search_query }}">
+                    </div>
+                    <div id="search-results" class="d-none"></div>
+                </div>
+                <div class="col-md-3">
+                    <select id="section-filter" name="section" class="form-select">
+                        <option value="0">All Sections</option>
+                        {% for choice in form.section.choices[1:] %}
+                        <option value="{{ choice[0] }}" {% if section_id == choice[0] %}selected{% endif %}>
+                            {{ choice[1] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if books.items %}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% for book in books.items %}
+    <div class="col">
+        <div class="card h-100 book-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ book.title }}</h5>
+                <span id="book-{{ book.id }}-status" class="badge {% if book.available %}bg-success{% else %}bg-danger{% endif %}">
+                    {% if book.available %}Available{% else %}Unavailable{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 text-muted">by {{ book.author }}</h6>
+                <p class="card-text small">
+                    <strong>Genre:</strong> {{ book.genre or 'Not specified' }}<br>
+                    <strong>Section:</strong> {{ book.section.name }}<br>
+                    <strong>ISBN:</strong> {{ book.isbn or 'Not specified' }}
+                </p>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('main.show_book', id=book.id) }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-info-circle me-1"></i>Details
+                </a>
+                {% if current_user.is_librarian() %}
+                <div>
+                    <a href="{{ url_for('main.edit_book', id=book.id) }}" class="btn btn-sm btn-warning me-1">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    <form action="{{ url_for('main.delete_book', id=book.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-danger btn-delete">
+                            <i class="fas fa-trash-alt me-1"></i>Delete
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+<nav aria-label="Book pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if books.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('main.books', page=books.prev_num, query=search_query, section=section_id) }}">
+                Previous
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Previous</span>
+        </li>
+        {% endif %}
+
+        {% for page_num in books.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == books.page %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.books', page=page_num, query=search_query, section=section_id) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if books.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('main.books', page=books.next_num, query=search_query, section=section_id) }}">
+                Next
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">Next</span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="fas fa-info-circle me-2"></i>No books found. {% if current_user.is_librarian() %}Consider adding some books to the collection.{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if request.args.get('admin') == '1' %}
+    Admin Login - Library Book Management System
+    {% else %}
+    Login - Library Book Management System
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    {% if request.args.get('admin') == '1' %}
+                    Admin Login
+                    {% else %}
+                    Login
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('auth.login', admin='1' if request.args.get('admin') == '1' else None) }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control", placeholder="Enter your username") }}
+                        {% for error in form.username.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control", placeholder="Enter your password") }}
+                        {% for error in form.password.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me(class="form-check-input") }}
+                        {{ form.remember_me.label(class="form-check-label") }}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+            {% if request.args.get('admin') != '1' %}
+            <div class="card-footer text-center">
+                <p class="mb-0">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a></p>
+            </div>
+            {% endif %}
+            {% if request.args.get('admin') == '1' %}
+            <div class="card-footer bg-light">
+                <div class="alert alert-info mb-0">
+                    <p class="small mb-0">
+                        <i class="fas fa-info-circle me-1"></i> 
+                        This is the administrative login. If you're a student or librarian, please use the <a href="{{ url_for('auth.login') }}">standard login</a>.
+                    </p>
+                </div>
+                {% if config.DEBUG %}
+                <div class="mt-2 p-2 border border-info rounded">
+                    <p class="small text-info mb-0">
+                        <i class="fas fa-key me-1"></i> 
+                        Admin credentials: username <strong>admin</strong>, password <strong>admin@password</strong>
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

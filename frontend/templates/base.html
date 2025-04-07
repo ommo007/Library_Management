@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() if csrf_token else '' }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Library Book Management System{% endblock %}</title>
     
     <!-- Bootstrap CSS -->
@@ -11,7 +11,7 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') if request else './style.css' }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     
     {% block styles %}{% endblock %}
 </head>
@@ -19,7 +19,7 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('main.index') if request else './index.html' }}">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <i class="fas fa-book-open me-2"></i>Library Management
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
@@ -29,21 +29,28 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request and request.path == url_for('main.index') %}active{% endif %}" 
-                           href="{{ url_for('main.index') if request else './index.html' }}">Home</a>
+                        <a class="nav-link {% if request.path == url_for('main.index') %}active{% endif %}" 
+                           href="{{ url_for('main.index') }}">Home</a>
                     </li>
+                    {% if current_user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request and request.path.startswith('/books') %}active{% endif %}" 
-                           href="{{ url_for('main.books') if request else './index.html' }}">Books</a>
+                        <a class="nav-link {% if request.path.startswith('/books') %}active{% endif %}" 
+                           href="{{ url_for('main.books') }}">Books</a>
                     </li>
+                    {% if current_user.is_librarian() %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path.startswith('/sections') %}active{% endif %}" 
+                           href="{{ url_for('main.sections') }}">Sections</a>
+                    </li>
+                    {% endif %}
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     {% if current_user.is_authenticated %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-1"></i>
-                            {{ current_user.username }}
+                            <i class="fas fa-user-circle me-1"></i>{{ current_user.username }}
                             {% if current_user.is_admin() %}
                             <span class="badge bg-danger">Admin</span>
                             {% elif current_user.is_librarian() %}
@@ -54,22 +61,22 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             {% if current_user.is_admin() %}
-                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_dashboard') if request else './admin_dashboard.html' }}">
+                            <li><a class="dropdown-item" href="{{ url_for('auth.admin_dashboard') }}">
                                 <i class="fas fa-tachometer-alt me-1"></i>Admin Dashboard
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
                             {% endif %}
-                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') if request else './index.html' }}">Logout</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
                         </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request and request.path == url_for('auth.login') %}active{% endif %}" 
-                           href="{{ url_for('auth.login') if request else './login.html' }}">Login</a>
+                        <a class="nav-link {% if request.path == url_for('auth.login') %}active{% endif %}" 
+                           href="{{ url_for('auth.login') }}">Login</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request and request.path == url_for('auth.register') %}active{% endif %}" 
-                           href="{{ url_for('auth.register') if request else './register.html' }}">Register</a>
+                        <a class="nav-link {% if request.path == url_for('auth.register') %}active{% endif %}" 
+                           href="{{ url_for('auth.register') }}">Register</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -105,10 +112,10 @@
                     <p class="small">Manage your library efficiently</p>
                 </div>
                 <div class="col-md-6 text-md-end">
-                    <p class="small">&copy; {{ now.year if now else '2023' }} Library Book Management System. All rights reserved.</p>
-                    {% if request and request.path == url_for('main.index') or not request %}
+                    <p class="small">&copy; {{ now.year }} Library Book Management System. All rights reserved.</p>
+                    {% if request.path == url_for('main.index') %}
                     <p class="admin-link small">
-                        <a href="{{ url_for('auth.login', admin=1) if request else './login.html?admin=1' }}" class="text-muted text-decoration-none">
+                        <a href="{{ url_for('auth.login', admin=1) }}" class="text-muted text-decoration-none">
                             <i class="fas fa-lock me-1"></i>Admin Access
                         </a>
                     </p>
@@ -121,7 +128,7 @@
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
-    <script src="{{ url_for('static', filename='js/main.js') if request else './main.js' }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     
     {% block scripts %}{% endblock %}
 </body>

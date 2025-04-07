@@ -38,9 +38,6 @@
     padding: 5rem 0;
     background-color: var(--bs-dark);
     color: white;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('../img/library-bg.jpg');
-    background-size: cover;
-    background-position: center;
 }
 
 /* Librarian badge */
@@ -99,9 +96,4 @@
 
 .admin-link:hover {
     opacity: 1;
-}
-
-/* Toast container */
-.toast-container {
-    z-index: 1100;
 }

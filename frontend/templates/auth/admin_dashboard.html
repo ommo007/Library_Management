@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Library Book Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="section-header"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>User Management</h5>
+            </div>
+            <div class="card-body">
+                <p>Create and manage user accounts for the system.</p>
+                <div class="d-grid">
+                    <a href="{{ url_for('auth.create_librarian') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus me-1"></i>Create Librarian Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>System Information</h5>
+            </div>
+            <div class="card-body">
+                <p>Welcome to the administrative dashboard. From here you can manage the library system.</p>
+                <p>As an administrator, you have the following capabilities:</p>
+                <ul>
+                    <li>Create librarian accounts with staff privileges</li>
+                    <li>Access all library management features</li>
+                    <li>System maintenance and configuration</li>
+                </ul>
+                <p class="text-muted small">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    For security reasons, create separate accounts for each librarian.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
