@@ -166,6 +166,101 @@ def create_tables():
         logger.error(f"Error creating tables: {e}")
         raise
 
+def initialize_purchase_system():
+    """Create purchase tables and initial settings"""
+    conn = get_connection()
+    try:
+        with get_cursor(conn) as cursor:
+            # Create purchases table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchases (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id) NOT NULL,
+                book_id INTEGER REFERENCES books(id) NOT NULL,
+                purchase_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                price NUMERIC(10, 2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'completed',
+                UNIQUE(user_id, book_id)
+            )
+            """)
+            
+            # Create purchase settings table
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS purchase_settings (
+                id SERIAL PRIMARY KEY,
+                allow_student_purchases BOOLEAN DEFAULT TRUE,
+                default_book_price NUMERIC(10, 2) DEFAULT 9.99
+            )
+            """)
+            
+            # Check if settings exist, if not create default
+            cursor.execute("SELECT COUNT(*) FROM purchase_settings")
+            if cursor.fetchone()[0] == 0:
+                cursor.execute(
+                    "INSERT INTO purchase_settings (allow_student_purchases, default_book_price) VALUES (true, 9.99)"
+                )
+            
+            conn.commit()
+            logger.info("Purchase system initialized successfully")
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Error initializing purchase system: {e}")
+        raise
+
+def purchase_book(user_id, book_id):
+    """Process a book purchase by a student"""
+    conn = get_connection()
+    try:
+        # First check if student purchases are allowed
+        with get_cursor(conn) as cursor:
+            cursor.execute("SELECT allow_student_purchases, default_book_price FROM purchase_settings LIMIT 1")
+            settings = cursor.fetchone()
+            
+            if not settings or not settings['allow_student_purchases']:
+                logger.warning("Student purchases are currently disabled")
+                return False, "Book purchases are currently disabled"
+            
+            # Get user and verify it's a student
+            cursor.execute("SELECT r.name FROM users u JOIN roles r ON u.role_id = r.id WHERE u.id = %s", (user_id,))
+            user_role = cursor.fetchone()
+            if not user_role or user_role['name'] != 'Student':
+                logger.warning(f"Non-student user {user_id} attempted to purchase a book")
+                return False, "Only students can purchase books"
+            
+            # Check if book exists and is available
+            cursor.execute("SELECT title, available FROM books WHERE id = %s", (book_id,))
+            book = cursor.fetchone()
+            if not book:
+                logger.warning(f"Attempted to purchase non-existent book ID {book_id}")
+                return False, "Book not found"
+                
+            if not book['available']:
+                logger.warning(f"Attempted to purchase unavailable book {book_id}")
+                return False, "Book is not available for purchase"
+            
+            # Process the purchase
+            try:
+                cursor.execute(
+                    "INSERT INTO purchases (user_id, book_id, price) VALUES (%s, %s, %s)",
+                    (user_id, book_id, settings['default_book_price'])
+                )
+                
+                # Update book availability
+                cursor.execute("UPDATE books SET available = false WHERE id = %s", (book_id,))
+                
+                conn.commit()
+                logger.info(f"Book {book_id} purchased successfully by user {user_id}")
+                return True, f"Successfully purchased {book['title']}"
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                logger.warning(f"User {user_id} already purchased book {book_id}")
+                return False, "You have already purchased this book"
+                
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Error during book purchase: {e}")
+        return False, "An error occurred while processing your purchase"
+
 # Model classes for data access
 
 class User(UserMixin):
@@ -691,6 +786,32 @@ class Book:
             'pages': (count + per_page - 1) // per_page
         }
     
+    @classmethod
+    def get_by_id(cls, book_id):
+        """Get book by ID"""
+        query = """
+        SELECT b.*, s.name as section_name
+        FROM books b
+        JOIN sections s ON b.section_id = s.id
+        WHERE b.id = %s
+        """
+        result = execute_query(query, (book_id,))
+        if result:
+            row = result[0]
+            return cls(
+                id=row['id'],
+                title=row['title'],
+                author=row['author'],
+                isbn=row['isbn'],
+                genre=row['genre'],
+                section_id=row['section_id'],
+                available=row['available'],
+                created_at=row['created_at'],
+                updated_at=row['updated_at'],
+                section_name=row['section_name']
+            )
+        return None
+    
     def create(self):
         """Create a new book"""
         query = """
@@ -719,20 +840,41 @@ class Book:
         WHERE id = %s
         RETURNING updated_at
         """
-        result = execute_query(
-            query,
-            (self.title, self.author, self.isbn, self.genre, self.section_id, self.available, self.id),
-            commit=True
-        )
-        if result:
-            self.updated_at = result[0]['updated_at']
-            return True
-        return False
+        
+        logger.info(f"Updating book ID {self.id}: {self.title}")
+        
+        try:
+            conn = get_connection()
+            with get_cursor(conn) as cursor:
+                cursor.execute(
+                    query,
+                    (self.title, self.author, self.isbn, self.genre, self.section_id, self.available, self.id)
+                )
+                result = cursor.fetchone()
+                
+                if result:
+                    self.updated_at = result['updated_at']
+                    conn.commit()  # Explicitly commit the transaction
+                    logger.info(f"Book update committed to database: ID {self.id}")
+                    return True
+                else:
+                    conn.rollback()
+                    logger.error(f"No rows updated for book ID {self.id}")
+                    return False
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error updating book ID {self.id}: {str(e)}")
+            return False
     
     def delete(self):
         """Delete book"""
         query = "DELETE FROM books WHERE id = %s"
         return execute_query(query, (self.id,), fetch=False, commit=True) > 0
+    
+    def purchase(self, user_id):
+        """Purchase this book for the specified user"""
+        success, message = purchase_book(user_id, self.id)
+        return success, message
 
 # Helper class for pagination to mimic SQLAlchemy's pagination
 class Pagination:

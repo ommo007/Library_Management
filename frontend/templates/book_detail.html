@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }} - Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>{{ book.title }}</h3>
+                </div>
+                <div class="card-body">
+                    <p><strong>Author:</strong> {{ book.author }}</p>
+                    <p><strong>ISBN:</strong> {{ book.isbn or 'Not available' }}</p>
+                    <p><strong>Genre:</strong> {{ book.genre or 'Not specified' }}</p>
+                    <p><strong>Section:</strong> {{ book._section_name }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if book.available %}
+                            <span class="badge bg-success">Available</span>
+                        {% else %}
+                            <span class="badge bg-danger">Not Available</span>
+                        {% endif %}
+                    </p>
+
+                    <!-- Debug information -->
+                    {% if current_user.is_authenticated %}
+                    <div class="alert alert-info">
+                        <p><strong>User Role:</strong> 
+                        {% if current_user.is_student() %}Student{% 
+                        elif current_user.is_librarian() %}Librarian{% 
+                        elif current_user.is_admin() %}Admin{% 
+                        else %}Unknown{% endif %}</p>
+                        <p><strong>Book Available:</strong> {{ book.available }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-3">
+                        <!-- Purchase Button for Students -->
+                        {% if current_user.is_authenticated and current_user.is_student() and book.available %}
+                        <form method="POST" action="/books/{{ book.id }}/purchase">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary">Purchase Book</button>
+                        </form>
+                        {% endif %}
+                        
+                        <!-- Admin/Librarian Actions -->
+                        {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_librarian()) %}
+                        <a href="{{ url_for('main.edit_book', book_id=book.id) }}" class="btn btn-warning">Edit</a>
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                            Delete
+                        </button>
+                        {% endif %}
+                        
+                        <a href="{{ url_for('main.books') }}" class="btn btn-secondary">Back to Books</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_librarian()) %}
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete "{{ book.title }}"?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{{ url_for('main.delete_book', book_id=book.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

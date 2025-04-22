@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}My Purchases{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>My Purchased Books</h1>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+
+    {% if purchases %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Genre</th>
+                        <th>Section</th>
+                        <th>Purchase Date</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in purchases %}
+                    <tr>
+                        <td><a href="{{ url_for('main.books') }}">{{ purchase.book.title }}</a></td>
+                        <td>{{ purchase.book.author }}</td>
+                        <td>{{ purchase.book.genre }}</td>
+                        <td>{{ purchase.book._section_name }}</td>
+                        <td>{{ purchase.purchase_date.strftime('%Y-%m-%d') }}</td>
+                        <td>${{ "%.2f"|format(purchase.price) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <h5>You haven't purchased any books yet.</h5>
+            <p>Browse our <a href="{{ url_for('main.books') }}">collection</a> to find books that interest you.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

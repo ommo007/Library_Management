@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Student Dashboard</h1>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Welcome, {{ current_user.username }}!</h4>
+                <p>Browse our collection and purchase books that interest you.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Available Books</h4>
+                </div>
+                <div class="card-body">
+                    <p>Browse our collection of available books and make a purchase.</p>
+                    <a href="{{ url_for('main.books') }}" class="btn btn-primary">Browse Complete Catalog</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">My Purchases</h4>
+                </div>
+                <div class="card-body">
+                    <p>View books you've already purchased.</p>
+                    <a href="{{ url_for('student_purchases') }}" class="btn btn-success">View Purchases</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Books Available for Purchase</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for book in available_books %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">{{ book.title }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{ book.author }}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">Section: {{ book._section_name }}</small><br>
+                                <small class="text-muted">Genre: {{ book.genre or 'N/A' }}</small>
+                            </p>
+                            <div class="d-grid gap-2">
+                                <form method="POST" action="/books/{{ book.id }}/purchase">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="fas fa-shopping-cart me-2"></i>Purchase Book
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <p class="mb-0">No books are currently available for purchase. Check back later!</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

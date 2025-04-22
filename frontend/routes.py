@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import datetime
@@ -87,25 +87,54 @@ def create_book():
 @login_required
 @librarian_required
 def edit_book(id):
+    """Edit book details"""
     book = Book.get_by_id(id)
     if not book:
-        abort(404)
+        flash('Book not found', 'danger')
+        return redirect(url_for('main.books'))
     
-    form = BookForm(obj=book)
+    # Create form with original book data
+    form = BookForm()
+    
+    # Pre-populate section choices (assuming you have a form with dropdown)
+    sections = Section.get_all()
+    form.section_id.choices = [(s.id, s.name) for s in sections]
+    
+    if request.method == 'GET':
+        # Pre-populate form fields for GET request
+        form.title.data = book.title
+        form.author.data = book.author
+        form.isbn.data = book.isbn
+        form.genre.data = book.genre
+        form.section_id.data = book.section_id
+        form.available.data = book.available
     
     if form.validate_on_submit():
-        book.title = form.title.data
-        book.author = form.author.data
-        book.isbn = form.isbn.data
-        book.genre = form.genre.data
-        book.section_id = form.section_id.data
-        book.available = form.available.data
-        
-        if book.update():
-            flash('Book updated successfully.', 'success')
-            return redirect(url_for('main.show_book', id=book.id))
-        else:
-            flash('Error updating book. Please try again.', 'danger')
+        try:
+            # Update book with form data
+            book.title = form.title.data
+            book.author = form.author.data
+            book.isbn = form.isbn.data
+            book.genre = form.genre.data
+            book.section_id = form.section_id.data
+            book.available = form.available.data
+            
+            # Log the update operation
+            current_app.logger.info(f"Updating book ID {id}: {book.title}")
+            
+            # Explicitly update and commit to database
+            success = book.update()
+            
+            if success:
+                flash('Book updated successfully', 'success')
+                current_app.logger.info(f"Book ID {id} updated successfully")
+                return redirect(url_for('main.books'))
+            else:
+                flash('Error updating book', 'danger')
+                current_app.logger.error(f"Database error updating book ID {id}")
+        except Exception as e:
+            current_app.logger.error(f"Exception updating book ID {id}: {str(e)}")
+            flash(f'Error updating book: {str(e)}', 'danger')
     
     return render_template('books/edit.html', form=form, book=book)
 
